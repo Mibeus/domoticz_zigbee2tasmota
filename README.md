@@ -107,6 +107,45 @@ Physical Device → Creates 3 Domoticz Devices:
 
 ## 🔧 Advanced Configuration
 
+## 🔘 Using Button Devices
+
+Button devices send events in format `X-Y`:
+- **X** = Button number (1-4 for 4-button switch)
+- **Y** = Action type:
+  - `0` = Single click
+  - `1` = Double click  
+  - `2` = Long press (hold)
+
+### Quick Example
+
+**Physical device:** 4-button switch `Z2T - switch_black 4way (0x6433)`  
+**Goal:** Toggle kitchen light (idx 32) when button 2 is single-clicked
+
+**DzVents Script:**
+
+In Domoticz: **Setup → More Options → Events → ➕ Create DzVents script**
+```lua
+return {
+    on = {
+        devices = {'Z2T - switch_black 4way (0x6433)'}  -- Your button device name
+    },
+    
+    execute = function(domoticz, device)
+        -- Get button value (e.g. "2-0")
+        local buttonValue = device.state
+        
+        -- Log for debugging
+        domoticz.log('Button pressed: ' .. buttonValue, domoticz.LOG_INFO)
+        
+        -- Button 2, single click (2-0)
+        if buttonValue == '2-0' then
+            domoticz.log('Toggling Kitchen light', domoticz.LOG_INFO)
+            domoticz.devices(32).toggleSwitch()  -- idx 32 = kitchen switch
+        end
+    end
+}
+```
+
 ### Lux Calibration for tuya Human presence sensor 4in1 
 
 The plugin includes calibration for Tuya TS0601 human sensors. Raw illuminance values are converted to actual lux using interpolation:
