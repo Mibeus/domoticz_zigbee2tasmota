@@ -31,8 +31,8 @@ Auto-discovery plugin for Domoticz that automatically creates and manages Zigbee
 # Download plugin files
 mkdir -p ~/domoticz/plugins/ZigbeeMQTT
 cd ~/domoticz/plugins/ZigbeeMQTT
-wget https://raw.githubusercontent.com/MibeusE/zigbee-mqtt-domoticz/main/plugin.py
-wget https://raw.githubusercontent.com/MibeusE/zigbee-mqtt-domoticz/main/mqtt.py
+wget https://raw.githubusercontent.com/Mibeus/zigbee-mqtt-domoticz/main/plugin.py
+wget https://raw.githubusercontent.com/Mibeus/zigbee-mqtt-domoticz/main/mqtt.py
 
 # Copy to Docker container
 docker cp ~/domoticz/plugins/ZigbeeMQTT domoticz:/config/plugins/
@@ -47,7 +47,7 @@ docker restart domoticz
 cd /path/to/domoticz/plugins
 
 # Clone repository
-git clone https://github.com/MibeusE/zigbee-mqtt-domoticz.git ZigbeeMQTT
+git clone https://github.com/Mibeus/zigbee-mqtt-domoticz.git ZigbeeMQTT
 
 # Restart Domoticz
 sudo systemctl restart domoticz
