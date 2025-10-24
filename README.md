@@ -67,6 +67,10 @@ sudo systemctl restart domoticz
    - **Tasmota Topic**: Your Tasmota device topic (e.g., `Zb_gateway_28F860`)
    - **Debug**: `False` (set to `True` for troubleshooting)
 4. Click **Add**
+5. Add new hardware:
+   - **Type**: `Dummy(Does nothing, use for virtual switches only)`
+     - **Name**: Your choice (e.g., "Zigbee Devices")
+6. Click **Add**
 
 ## 🎯 How It Works
 
