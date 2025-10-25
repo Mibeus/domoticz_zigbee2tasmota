@@ -11,7 +11,7 @@ Auto-discovery plugin for Domoticz that automatically creates and manages Zigbee
   - Multi-button switches (1-4 buttons)
   - Door/Window sensors
   - Water leak sensors
-  - Dimmers and smart plugs - (not tested)
+  - Dimmers and smart plugs
 - **🔄 Partial Updates**: Handles temperature-only or humidity-only updates (battery saving)
 - **💡 Calibrated Lux**: Accurate lux conversion for Tuya TS0601 human sensors
 - **🔋 Battery Monitoring**: Automatic battery level updates
