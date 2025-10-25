@@ -1,10 +1,11 @@
 """
-<plugin key="ZigbeeMQTT" name="Zigbee MQTT Bridge" author="Custom" version="3.3.0">
+<plugin key="ZigbeeMQTT" name="Zigbee MQTT Bridge" author="Custom" version="3.3.1">
     <description>
         <h2>Zigbee MQTT Auto-Discovery Bridge</h2><br/>
         Multi-sensors are split into separate devices<br/>
         Handles partial updates (Temperature OR Humidity)<br/>
-        Calibrated Lux conversion for Tuya TS0601 human sensor
+        Calibrated Lux conversion for Tuya TS0601 human sensor<br/>
+        Fixed dimmer control and partial updates
     </description>
     <params>
         <param field="Address" label="MQTT Server" width="300px" required="true" default="192.168.88.115"/>
@@ -65,6 +66,75 @@ class BasePlugin:
     def onMessage(self, Connection, Data):
         if self.mqttClient:
             self.mqttClient.onMessage(Connection, Data)
+    
+    def onCommand(self, Unit, Command, Level, Color):
+        Domoticz.Debug(f"onCommand: Unit={Unit}, Command={Command}, Level={Level}")
+        
+        device_addr = None
+        device_type = None
+        
+        for addr, info in self.deviceMap.items():
+            if "units" in info:
+                for i, unit in enumerate(info["units"]):
+                    if unit == Unit:
+                        device_addr = addr
+                        device_type = info["types"][i]
+                        break
+            else:
+                if info.get("unit") == Unit:
+                    device_addr = addr
+                    device_type = info.get("type")
+                    break
+            
+            if device_addr:
+                break
+        
+        if not device_addr:
+            Domoticz.Debug(f"Device with Unit {Unit} not found")
+            return
+        
+        if device_type != "dimmer":
+            Domoticz.Debug(f"Device type '{device_type}' does not support commands")
+            return
+        
+        tasmota_topic = Parameters["Mode1"]
+        payload = None
+        
+        # ⭐ LEN JEDEN PRÍKAZ NARAZ ⭐
+        if Command == "Off":
+            # Vypni svetlo
+            payload = f'{{"Device":"{device_addr}","Send":{{"Power":0}}}}'
+            
+        elif Command == "On":
+            # Zapni na 100%
+            payload = f'{{"Device":"{device_addr}","Send":{{"Power":1}}}}'
+            
+        elif Command == "Set Level":
+            if Level == 0:
+                # Level 0 = vypni
+                payload = f'{{"Device":"{device_addr}","Send":{{"Power":0}}}}'
+            else:
+                # Nastav dimmer level
+                # Power sa zapne automaticky keď nastavíš Dimmer > 0
+                dimmer = int((Level / 100) * 254)
+                payload = f'{{"Device":"{device_addr}","Send":{{"Dimmer":{dimmer}}}}}'
+        else:
+            Domoticz.Log(f"Unknown command: {Command}")
+            return
+        
+        if payload:
+            mqtt_topic = f"cmnd/{tasmota_topic}/ZbSend"
+            Domoticz.Log(f"Sending: {payload}")
+            self.mqttClient.publish(mqtt_topic, payload)
+            
+            # Optimistický update
+            if Command == "Off" or (Command == "Set Level" and Level == 0):
+                Devices[Unit].Update(nValue=0, sValue="0")
+            elif Command == "On":
+                Devices[Unit].Update(nValue=1, sValue="100")
+            elif Command == "Set Level":
+                Devices[Unit].Update(nValue=1, sValue=str(Level))
+      
     
     def onHeartbeat(self):
         if self.mqttClient:
@@ -294,7 +364,6 @@ class BasePlugin:
                     elif dtype == "lux" and "Illuminance" in data:
                         raw_lux = data['Illuminance']
                         
-                        # Kalibračná tabuľka pre Tuya TS0601 human sensor (nočné merania)
                         calibration = [
                             (1, 0),
                             (23156, 87),
@@ -348,9 +417,23 @@ class BasePlugin:
                         Devices[unit].Update(nValue=0, sValue=val)
                         Domoticz.Log(f"Button {addr}: {val}")
                     
-                    elif dtype == "dimmer" and "Power" in data:
-                        lvl = int((data.get("Dimmer", 254) / 254) * 100)
-                        Devices[unit].Update(nValue=data["Power"], sValue=str(lvl))
+                    elif dtype == "dimmer":
+                        if "Power" in data or "Dimmer" in data:
+                            if "Power" in data:
+                                power = data["Power"]
+                            else:
+                                dimmer_val = data.get("Dimmer", 0)
+                                power = 1 if dimmer_val > 0 else 0
+                            
+                            if "Dimmer" in data:
+                                dimmer_raw = data["Dimmer"]
+                                dimmer_percent = int((dimmer_raw / 254) * 100)
+                            else:
+                                current_value = Devices[unit].sValue
+                                dimmer_percent = int(current_value) if current_value else 100
+                            
+                            Devices[unit].Update(nValue=power, sValue=str(dimmer_percent))
+                            Domoticz.Debug(f"Updated {addr} Dimmer: Power={power}, Level={dimmer_percent}%")
                     
                     elif dtype == "switch" and "Power" in data:
                         Devices[unit].Update(nValue=data["Power"], sValue="")
@@ -406,6 +489,10 @@ def onDisconnect(Connection):
 def onMessage(Connection, Data):
     global _plugin
     _plugin.onMessage(Connection, Data)
+
+def onCommand(Unit, Command, Level, Color):
+    global _plugin
+    _plugin.onCommand(Unit, Command, Level, Color)
 
 def onHeartbeat():
     global _plugin
