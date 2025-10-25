@@ -26,19 +26,20 @@ Auto-discovery plugin for Domoticz that automatically creates and manages Zigbee
 
 ## 🚀 Installation
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker (Recommended), tested with domoticz 2025.2
 ```bash
 # Download plugin files
 mkdir -p ~/domoticz/plugins/ZigbeeMQTT
 cd ~/domoticz/plugins/ZigbeeMQTT
-wget https://raw.githubusercontent.com/Mibeus//domoticz_zigbee2tasmota/main/plugin.py
-wget https://raw.githubusercontent.com/Mibeus//domoticz_zigbee2tasmota/main/mqtt.py
+wget https://raw.githubusercontent.com/Mibeus/domoticz_zigbee2tasmota/main/plugin.py
+wget https://raw.githubusercontent.com/Mibeus/domoticz_zigbee2tasmota/main/mqtt.py
 
-# Copy to Docker container
-docker cp ~/domoticz/plugins/ZigbeeMQTT domoticz:/config/plugins/
+# Copy to Docker container (FIXED PATH)
+docker cp ~/domoticz/plugins/ZigbeeMQTT domoticz:/opt/domoticz/userdata/plugins/
 
 # Restart Domoticz
 docker restart domoticz
+
 ```
 
 ### Option 2: Native Installation
